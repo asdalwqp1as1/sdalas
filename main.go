@@ -22,8 +22,11 @@ const (
 )
 
 var (
-	count    = 0
-	daysLeft = 10
+	count    = 2
+	daysLeft = 2
+
+	meetingLink = "https://meet.google.com/jqu-kwiv-nmt"
+	clickupLink = "https://app.clickup.com/24579426/v/b/li/901803103978"
 )
 
 func getDaysLeft() int {
@@ -60,11 +63,11 @@ func sendReminder(bot *tgbotapi.BotAPI, chatID int64) {
 	if daysLeft == -1 {
 		return
 	} else if daysLeft == 1 {
-		message = "❗❗❗ ПОСЛЕДНИЙ ДЕНЬ СПРИНТА ❗❗❗\n\n\nСсылка на встречу:\nhttps://meet.google.com/jqu-kwiv-nmt"
+		message = fmt.Sprintf("❗❗❗ ПОСЛЕДНИЙ ДЕНЬ СПРИНТА ❗❗❗\n\n\nСсылка на встречу:\n%s", meetingLink)
 	} else if daysLeft >= 2 && daysLeft <= 4 {
-		message = fmt.Sprintf("❗❗❗ ДО КОНЦА СПРИНТА ОСТАЛОСЬ %d ДНЯ ❗❗❗\n\n\nСсылка на встречу:\nhttps://meet.google.com/jqu-kwiv-nmt", daysLeft)
+		message = fmt.Sprintf("❗❗❗ ДО КОНЦА СПРИНТА ОСТАЛОСЬ %d ДНЯ ❗❗❗\n\n\nСсылка на встречу:\n%s", daysLeft, meetingLink)
 	} else if daysLeft >= 5 && daysLeft <= 10 {
-		message = fmt.Sprintf("❗❗❗ ДО КОНЦА СПРИНТА ОСТАЛОСЬ %d ДНЕЙ ❗❗❗\n\n\nСсылка на встречу:\nhttps://meet.google.com/jqu-kwiv-nmt", daysLeft)
+		message = fmt.Sprintf("❗❗❗ ДО КОНЦА СПРИНТА ОСТАЛОСЬ %d ДНЕЙ ❗❗❗\n\n\nСсылка на встречу:\n%s", daysLeft, meetingLink)
 	}
 
 	msg := tgbotapi.NewMessage(chatID, message)
@@ -74,8 +77,18 @@ func sendReminder(bot *tgbotapi.BotAPI, chatID int64) {
 	}
 }
 
-func commentCards(bot *tgbotapi.BotAPI, chatID int64) {
-	message := "❗ НЕ ЗАБУДЬТЕ ОСТАВИТЬ КОММЕНТАРИИ К ЗАДАЧАМ ❗\n\n\nСсылка на ClickUp:\nhttps://app.clickup.com/24579426/v/b/li/901802397345"
+func commentCardsEvening(bot *tgbotapi.BotAPI, chatID int64) {
+	message := fmt.Sprintf("❗ НЕ ЗАБУДЬТЕ ОСТАВИТЬ КОММЕНТАРИИ К ЗАДАЧАМ ❗\n\n\nСсылка на ClickUp:\n%s", clickupLink)
+
+	msg := tgbotapi.NewMessage(chatID, message)
+	_, err := bot.Send(msg)
+	if err != nil {
+		log.Printf("ERROR: failed send message: %v\n", err)
+	}
+}
+
+func commentCardsMorning(bot *tgbotapi.BotAPI, chatID int64) {
+	message := fmt.Sprintf("❗ А ВЫ ТОЧНО ОСТАВИЛИ КОММЕНТАРИИ К ЗАДАЧАМ? ❗\n\n\nСсылка на ClickUp:\n%s", clickupLink)
 
 	msg := tgbotapi.NewMessage(chatID, message)
 	_, err := bot.Send(msg)
@@ -92,17 +105,18 @@ func main() {
 	}
 	bot.Debug = true
 	// sendReminder(bot, int64(chatID))
-	// commentCards(bot, int64(chatID))
+	// commentCardsMorning(bot, int64(chatID))
+	// commentCardsEvening(bot, int64(chatID))
 
 	location, err := time.LoadLocation(timeZone)
 	if err != nil {
 		log.Fatalln("ERROR:", err)
 	}
-	// fmt.Println(location.String())
 
 	cron := gocron.NewScheduler(location)
-	cron.Every(1).Monday().Tuesday().Wednesday().Thursday().Friday().At("9:50").Do(sendReminder, bot, int64(chatID))
-	cron.Every(1).Monday().Tuesday().Wednesday().Thursday().Friday().At("17:50").Do(commentCards, bot, int64(chatID))
+	cron.Every(1).Monday().Tuesday().Wednesday().Thursday().Friday().At("9:55").Do(sendReminder, bot, int64(chatID))
+	cron.Every(1).Monday().Tuesday().Wednesday().Thursday().Friday().At("9:45").Do(commentCardsMorning, bot, int64(chatID))
+	cron.Every(1).Monday().Tuesday().Wednesday().Thursday().Friday().At("18:00").Do(commentCardsEvening, bot, int64(chatID))
 	cron.StartAsync()
 
 	c := make(chan os.Signal, 1)
