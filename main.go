@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -141,9 +140,9 @@ func main() {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-	newCount := atomic.AddInt64(&counter, 1)
+	counter++
 
-	log.Printf("Received request #%d from %s\n", newCount, r.RemoteAddr)
+	log.Printf("Received request #%d", counter)
 
-	fmt.Fprintf(w, "Bot is running. Request number: %d\n", newCount)
+	fmt.Fprintf(w, "Bot is running. Request number: %d\n", counter)
 }
