@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -22,11 +23,13 @@ const (
 )
 
 var (
-	count    = 2
-	daysLeft = 2
+	counter int64 = 0
+
+	count    = 1
+	daysLeft = 6
 
 	meetingLink = "https://meet.google.com/jqu-kwiv-nmt"
-	clickupLink = "https://app.clickup.com/24579426/v/b/li/901803103978"
+	clickupLink = "https://app.clickup.com/24579426/v/b/li/901803503075"
 )
 
 func getDaysLeft() int {
@@ -123,9 +126,7 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintln(w, "Bot is running")
-		})
+		http.HandleFunc("/", requestHandler)
 
 		log.Printf("Starting server on port %s...\n", port)
 		if err := http.ListenAndServe(":"+port, nil); err != nil {
@@ -137,4 +138,12 @@ func main() {
 
 	cron.Stop()
 	log.Println("Application closing ...")
+}
+
+func requestHandler(w http.ResponseWriter, r *http.Request) {
+	newCount := atomic.AddInt64(&counter, 1)
+
+	log.Printf("Received request #%d from %s\n", newCount, r.RemoteAddr)
+
+	fmt.Fprintf(w, "Bot is running. Request number: %d\n", newCount)
 }
